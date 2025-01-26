@@ -12,6 +12,7 @@
       padding: 0;
       height: 100%;
       overflow: hidden;
+      cursor: none;
     }
 
     #introVideo {
@@ -38,6 +39,7 @@
       color: #00ff41;
       font-family: 'Hack', 'Courier New', monospace;
       background: url(./source/stream-binary-code-design-vector_53876-161363.avif);
+      display: none;
     }
 
     .heading {
@@ -48,25 +50,34 @@
       text-align: center;
     }
 
-    .dots span {
-      font-size: 0.8rem;
-      opacity: 0;
-      color: #00ff41;
+    .progress-bar {
+      width: 100%;
+      height: 10px;
+      background-color: #555;
+      border-radius: 5px;
+      margin-top: 20px;
+      position: relative;
+    }
+
+    .progress {
+      height: 100%;
+      width: 0;
+      background-color: #00ff41;
+      border-radius: 5px;
+      transition: width 1s ease;
     }
   </style>
 </head>
 
 <body>
-  <video id="introVideo" autoplay>
+  <video id="introVideo" muted>
     <source src="./source/Access Granted Sound.mp4" type="video/mp4">
   </video>
 
-  <div class="container" style="display:none;">
+  <div class="container">
     <div id="hack-text" class="heading"></div>
-    <div class="dots">
-      <span>.</span>
-      <span>.</span>
-      <span>.</span>
+    <div class="progress-bar">
+      <div class="progress"></div>
     </div>
   </div>
 
@@ -84,19 +95,20 @@
     ];
 
     const hackText = document.getElementById('hack-text');
-    const dots = document.querySelectorAll('.dots span');
+    const progressBar = document.querySelector('.progress');
     const hackMusic = document.getElementById('hackMusic');
     const introVideo = document.getElementById('introVideo');
     const container = document.querySelector('.container');
 
     let currentIndex = 0;
-    let dotIndex = 0;
     let charIndex = 0;
+    let processStarted = false;
 
     function typeWriter() {
       if (charIndex < arry[currentIndex].length) {
         hackText.innerHTML += arry[currentIndex].charAt(charIndex);
         charIndex++;
+        updateProgressBar();
         setTimeout(typeWriter, 50);
       } else {
         setTimeout(clearText, 1000);
@@ -107,36 +119,53 @@
       if (charIndex > 0) {
         hackText.innerHTML = hackText.innerHTML.slice(0, -1);
         charIndex--;
+        updateProgressBar();
         setTimeout(clearText, 50);
       } else {
         currentIndex = (currentIndex + 1) % arry.length;
-        updateDots();
 
         if (currentIndex === arry.length - 1) {
           hackText.innerHTML = "COMPLETED";
+          setTimeout(allowInteraction, 1000); // Enable interaction after completion
           return;
         }
 
+        updateProgressBar();
         typeWriter();
       }
     }
 
-    function updateDots() {
-      dots.forEach(dot => dot.style.opacity = 0);
-      dots[dotIndex].style.opacity = 1;
-      dotIndex = (dotIndex + 1) % dots.length;
+    function updateProgressBar() {
+      const progressPercentage = (charIndex / arry[currentIndex].length) * 100;
+      progressBar.style.width = progressPercentage + '%';
     }
 
-    introVideo.addEventListener('ended', () => {
-      introVideo.style.display = 'none';
-      container.style.display = 'flex';
-      hackMusic.play();
-      typeWriter();
-    });
+    // Prevent interactions until everything completes
+    function preventInteraction() {
+      document.body.style.pointerEvents = 'none';
+    }
 
-    // Start video and script when the page loads
-    document.addEventListener('DOMContentLoaded', () => {
-      introVideo.play();
+    // Allow interactions once the process is complete
+    function allowInteraction() {
+      document.body.style.pointerEvents = 'auto';
+    }
+
+    // Start everything when the user clicks anywhere on the screen
+    document.body.addEventListener('click', () => {
+      if (processStarted) return; // Prevent multiple clicks
+
+      processStarted = true; // Mark the process as started
+      introVideo.style.display = 'block';
+      introVideo.muted = false; // Unmute video
+      introVideo.play(); // Start video playback
+      preventInteraction(); // Disable further interactions
+
+      introVideo.addEventListener('ended', () => {
+        introVideo.style.display = 'none';
+        container.style.display = 'flex';
+        hackMusic.play();
+        typeWriter();
+      });
     });
   </script>
 </body>
